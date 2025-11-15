@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
--- Your Original Scripts (Fixed URLs - /refs/heads/main/ -> /main/)
+-- Updated Games List (Bee Swarm Simulator uses new loadstring)
 local games = {
     {
         name = "Blade Ball",
@@ -16,7 +16,8 @@ local games = {
     },
     {
         name = "Bee Swarm Simulator",
-        urls = {"https://raw.githubusercontent.com/darkieebee/Bee-swarm-simulator-v2-Autofarm-/main/Code"}
+        urls = {""}, -- Placeholder - we'll use direct loadstring below
+        loadstring = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/darkieebee/VoidHub/refs/heads/main/beeswam%20voidhub.txt"))()'
     }
 }
 
@@ -33,23 +34,35 @@ local function safeHttpGet(url, retries)
     return false, nil
 end
 
--- Load Script Function
-local function loadGameScript(urls)
-    for _, url in ipairs(urls) do
-        local success, code = safeHttpGet(url)
+-- Load Script Function (Supports both URLs and direct loadstring)
+local function loadGameScript(gameData)
+    if gameData.loadstring then
+        local success, err = pcall(function()
+            loadstring(gameData.loadstring)()
+        end)
         if success then
-            local loadSuccess, err = pcall(function()
-                loadstring(code)()
-            end)
-            if loadSuccess then
-                print("Script Hub: Loaded " .. game.name .. " successfully!")
-                return true
-            else
-                warn("Load error: " .. tostring(err))
+            print("Script Hub: Loaded " .. gameData.name .. " via loadstring successfully!")
+            return true
+        else
+            warn("Loadstring error: " .. tostring(err))
+        end
+    else
+        for _, url in ipairs(gameData.urls) do
+            local success, code = safeHttpGet(url)
+            if success then
+                local loadSuccess, err = pcall(function()
+                    loadstring(code)()
+                end)
+                if loadSuccess then
+                    print("Script Hub: Loaded " .. gameData.name .. " successfully!")
+                    return true
+                else
+                    warn("Load error: " .. tostring(err))
+                end
             end
         end
+        warn("Script Hub: All URLs failed - Check URLs or executor")
     end
-    warn("Script Hub: All URLs failed - Check URLs or executor")
     return false
 end
 
@@ -158,12 +171,12 @@ uiPadding.PaddingLeft = UDim.new(0, 10)
 uiPadding.Parent = contentFrame
 
 -- Game Buttons with Enhanced Design
-for i, game in ipairs(games) do
+for i, gameData in ipairs(games) do
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1, -20, 0, 60)
     btn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
     btn.BorderSizePixel = 0
-    btn.Text = game.name
+    btn.Text = gameData.name
     btn.TextColor3 = Color3.fromRGB(230, 230, 240)
     btn.TextSize = 16
     btn.Font = Enum.Font.Gotham
@@ -193,7 +206,7 @@ for i, game in ipairs(games) do
 
     btn.MouseButton1Click:Connect(function()
         screenGui:Destroy()
-        loadGameScript(game.urls)
+        loadGameScript(gameData)
     end)
 end
 
